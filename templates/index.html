@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SIATD IA · Sistema Inteligente de Alerta Temprana</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ============ SIDEBAR (desktop) / NAV INFERIOR (móvil) ============ -->
+  <nav class="sidebar" aria-label="Navegación principal">
+    <div class="sidebar__brand">
+      <span class="brand__mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22">
+          <path d="M12 2 2 7v6c0 5.2 3.8 9.4 10 11 6.2-1.6 10-5.8 10-11V7l-10-5Z" fill="none" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M8 12.5 10.8 15.3 16 9.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <div class="brand__text">
+        <strong>SIATD IA</strong>
+        <span>Alerta Temprana</span>
+      </div>
+    </div>
+
+    <ul class="sidebar__nav">
+      <li class="active" data-tab="panel"><span class="ico">◧</span><span>Panel</span></li>
+      <li data-tab="mapa"><span class="ico">◎</span><span>Mapa</span></li>
+      <li data-tab="alertas"><span class="ico">▲</span><span>Alertas</span></li>
+      <li data-tab="chat"><span class="ico">◍</span><span>Asistente</span></li>
+    </ul>
+
+    <div class="sidebar__footer">
+      <span class="dot dot--on"></span> Huaycán · Ate · Lima
+    </div>
+  </nav>
+
+  <!-- ============ CONTENIDO PRINCIPAL ============ -->
+  <div class="main">
+
+    <header class="topbar">
+      <div class="topbar__title">
+        <h1>Panel de monitoreo</h1>
+        <p>Huaycán, distrito de Ate — Lima, Perú</p>
+      </div>
+
+      <div class="topbar__meta">
+        <div class="system-pulse" id="systemPulse" aria-hidden="true">
+          <svg viewBox="0 0 140 32" preserveAspectRatio="none">
+            <polyline points="0,16 20,16 28,4 36,28 44,16 60,16 68,10 76,22 84,16 140,16" />
+          </svg>
+        </div>
+        <div class="clock" id="clock">--:--:--</div>
+      </div>
+    </header>
+
+    <main class="content">
+
+      <!-- ---- Tarjeta de estado actual ---- -->
+      <section class="card card--status" id="statusCard" aria-label="Estado actual del sistema">
+        <div class="card__head">
+          <span class="eyebrow">Estado del sistema</span>
+          <span class="badge" id="statusBadge">···</span>
+        </div>
+
+        <div class="status__body">
+          <div class="status__ring" id="statusRing">
+            <svg viewBox="0 0 120 120">
+              <circle class="ring__bg" cx="60" cy="60" r="52"/>
+              <circle class="ring__fg" id="ringFg" cx="60" cy="60" r="52"/>
+            </svg>
+            <div class="status__level" id="statusLevel">--</div>
+          </div>
+
+          <dl class="status__facts">
+            <div><dt>Zona crítica</dt><dd id="statusZona">Cargando…</dd></div>
+            <div><dt>Zonas monitoreadas</dt><dd id="statusZonasCount">--</dd></div>
+            <div><dt>Sensores activos</dt><dd id="statusSensores">--</dd></div>
+            <div><dt>Última actualización</dt><dd id="statusUpdated">--:--:--</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <!-- ---- Mapa ---- -->
+      <section class="card card--map" id="mapaCard" aria-label="Mapa de zonas de riesgo">
+        <div class="card__head">
+          <span class="eyebrow">Mapa de zonas · Huaycán</span>
+          <span class="card__hint">Toca un marcador para ver detalle</span>
+        </div>
+        <div id="map"></div>
+        <div class="map__legend">
+          <span><i class="dot dot--verde"></i>Normal</span>
+          <span><i class="dot dot--amarillo"></i>Vigilancia</span>
+          <span><i class="dot dot--naranja"></i>Alerta</span>
+          <span><i class="dot dot--rojo"></i>Emergencia</span>
+        </div>
+      </section>
+
+      <!-- ---- Panel de alertas ---- -->
+      <section class="card card--alerts" id="alertasCard" aria-label="Alertas activas">
+        <div class="card__head">
+          <span class="eyebrow">Alertas activas</span>
+          <span class="badge badge--muted" id="alertsCount">0</span>
+        </div>
+        <ul class="alert-list" id="alertList">
+          <li class="alert-list__empty">Cargando alertas…</li>
+        </ul>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ============ ASISTENTE IA (panel lateral / hoja móvil) ============ -->
+  <aside class="assistant" id="assistant" aria-label="Asistente SIATD IA">
+    <div class="assistant__head">
+      <div class="assistant__title">
+        <span class="dot dot--on pulse"></span>
+        <div>
+          <strong>Asistente SIATD</strong>
+          <span>Consulta el sistema en lenguaje natural</span>
+        </div>
+      </div>
+      <button class="assistant__close" id="assistantClose" aria-label="Cerrar asistente">✕</button>
+    </div>
+
+    <div class="assistant__messages" id="chatMessages">
+      <div class="msg msg--bot">
+        Hola, soy el asistente de <strong>SIATD IA</strong>. Pregúntame por el estado del sistema, zonas de riesgo o rutas de evacuación en Huaycán.
+      </div>
+    </div>
+
+    <form class="assistant__input" id="chatForm">
+      <input type="text" id="chatInput" placeholder="Escribe tu consulta…" autocomplete="off" />
+      <button type="submit" aria-label="Enviar mensaje">↑</button>
+    </form>
+  </aside>
+
+  <button class="assistant-fab" id="assistantFab" aria-label="Abrir asistente IA">
+    <span class="ico">◍</span>
+  </button>
+</div>
+
+<!-- Barra de navegación inferior (móvil) -->
+<nav class="tabbar" aria-label="Navegación móvil">
+  <button class="tabbar__item active" data-tab="panel"><span class="ico">◧</span>Panel</button>
+  <button class="tabbar__item" data-tab="mapa"><span class="ico">◎</span>Mapa</button>
+  <button class="tabbar__item" data-tab="alertas"><span class="ico">▲</span>Alertas</button>
+  <button class="tabbar__item" id="tabbarChat"><span class="ico">◍</span>Asistente</button>
+</nav>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
+

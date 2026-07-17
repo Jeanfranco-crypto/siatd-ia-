@@ -1,0 +1,11 @@
+.env
+__pycache__/
+*.pyc
+venv/
+gemini_env/
+*.log
+*.tar.gz
+*.zip
+*.wav
+memoria.json
+eventos.txt
